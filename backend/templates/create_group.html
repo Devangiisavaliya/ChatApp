@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Create Group</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+<link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
+</head>
+
+<body class="create-group-body">
+
+<div class="create-group-container">
+
+    <div class="create-group-card">
+
+        <h1>
+
+            Create Group
+
+        </h1>
+
+            <form method="POST" enctype="multipart/form-data">
+            <input
+                type="text"
+                name="group_name"
+                placeholder="Enter Group Name"
+                required
+            >
+              <div class="group-image-upload">
+
+            <input
+                type="file"
+                name="group_image"
+                accept="image/*"
+            >
+    </div>
+<div class="select-users">
+
+    <h3>
+        Select Members
+    </h3>
+
+    {% for user in users %}
+
+        <label>
+
+            <input
+                type="checkbox"
+                name="members"
+                value="{{ user.username }}"
+            >
+
+            {{ user.username }}
+
+        </label>
+
+    {% endfor %}
+
+</div>
+            <button type="submit">
+
+                Create Group
+
+            </button>
+
+        </form>
+
+        <a
+            href="/groups"
+            class="back-btn"
+        >
+
+            ← Back To Groups
+
+        </a>
+
+    </div>
+    
+</div>
+</body>
+
+</html>

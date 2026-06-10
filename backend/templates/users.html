@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Chat Users</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+
+</head>
+
+<body>
+
+<div class="users-page">
+
+    <!-- SIDEBAR -->
+
+    <div class="sidebar">
+
+        <!-- LOGO -->
+
+        <div class="sidebar-top">
+
+            <h2>
+                💬 ChatApp
+            </h2>
+
+        </div>
+
+        <!-- MENU -->
+
+        <div class="sidebar-menu">
+
+            <a
+                class="menu-item active-menu"
+            >
+                <i class="fa-solid fa-message"></i>
+
+                <span>
+                    Chats
+                </span>
+            </a>
+
+            <a
+                href="/groups"
+                class="menu-item"
+            >
+                <i class="fa-solid fa-users"></i>
+
+                <span>
+                    Groups
+                </span>
+            </a>
+
+            <a
+                href="/settings"
+                class="menu-item"
+            >
+                <i class="fa-solid fa-gear"></i>
+
+                <span>
+                    Settings
+                </span>
+            </a>
+
+            <a
+                href="/logout"
+                class="menu-item"
+            >
+                <i class="fa-solid fa-right-from-bracket"></i>
+
+                <span>
+                    Logout
+                </span>
+            </a>
+
+        </div>
+
+   <!-- LOGIN USER PROFILE -->
+
+<div class="login-profile">
+
+    <div class="login-profile-image">
+
+        {% if session.get('profile_photo') %}
+
+            <img
+                src="{{ url_for('static', filename='uploads/' + session['profile_photo']) }}"
+                class="login-profile-photo"
+            >
+
+        {% else %}
+
+            <img
+                src="{{ url_for('static', filename='default.png') }}"
+                class="login-profile-photo"
+            >
+
+        {% endif %}
+
+        <span class="login-online-dot"></span>
+
+    </div>
+
+    <div class="login-profile-info">
+
+        <h3>
+            {{ session['username'] }}
+        </h3>
+
+        <p>
+            Online
+        </p>
+
+    </div>
+
+</div>
+
+
+    </div>
+
+    <!-- CHAT LIST -->
+
+    <!-- SUB SIDEBAR -->
+
+    <div class="sub-sidebar">
+
+        <!-- TOP -->
+
+        <!-- SUB SIDEBAR TOP -->
+
+<div class="sub-sidebar-top">
+
+    <h2>
+        Chats
+    </h2>
+
+    <button class="new-chat-btn">
+
+        <i class="fa-solid fa-pen"></i>
+
+    </button>
+
+</div>
+
+        <!-- SEARCH -->
+
+        <div class="search-box">
+
+                <i class="fa-solid fa-search"></i>
+
+                <input
+                    type="text"
+                    id="searchUser"
+                    placeholder="Search users..."
+                    onkeyup="searchUsers()"
+                >
+
+        </div>
+
+        <!-- USERS -->
+
+        <div class="users-container">
+
+            {% for user in users %}
+
+            <a
+                href="/chat/{{ user.username }}"
+                class="chat-user"
+                data-username="{{ user.username }}"
+            >
+
+                <!-- IMAGE -->
+
+                {% if user.profile_photo %}
+
+                    <img
+                        src="{{ url_for('static', filename='uploads/' + user.profile_photo) }}"
+                        class="profile-photo"
+                    >
+
+                {% else %}
+
+                    <img
+                        src="{{ url_for('static', filename='default.png') }}"
+                        class="profile-photo"
+                    >
+
+                {% endif %}
+
+                <!-- INFO -->
+
+                <div class="chat-user-info">
+
+                    <h3>
+
+                        {{ user.username }}
+
+                    </h3>
+
+                    {% if user.status == "online" %}
+
+                        <p class="online-text">
+
+                            ● Online
+
+                        </p>
+
+                    {% else %}
+
+                        <p class="offline-text">
+
+                            ● Offline
+
+                        </p>
+
+                    {% endif %}
+
+                </div>
+
+                <!-- ICON -->
+
+                <div class="chat-arrow">
+
+                    <i class="fa-solid fa-angle-right"></i>
+
+                </div>
+
+            </a>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+<!-- CHAT AREA -->
+
+<!-- CHAT AREA -->
+
+<div class="chat-area">
+
+    {% if receiver %}
+
+        {% include 'private_chat.html' %}
+
+    {% else %}
+
+        <div class="empty-chat">
+
+            <h1>Select User</h1>
+
+        </div>
+
+    {% endif %}
+
+</div>
+</div>
+
+</body>
+<script>
+
+function searchUsers(){
+
+    let input =
+        document.getElementById("searchUser")
+        .value
+        .toLowerCase();
+
+    let users =
+        document.querySelectorAll(".chat-user");
+
+    users.forEach(function(user){
+
+        let username =
+            user.getAttribute("data-username")
+            .toLowerCase();
+
+        if(username.includes(input)){
+
+            user.style.display = "flex";
+
+        }
+        else{
+
+            user.style.display = "none";
+
+        }
+
+    });
+
+}
+
+</script>
+</html>

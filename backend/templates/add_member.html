@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Add Member</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+<div class="create-group-container">
+
+    <div class="create-group-card">
+
+        <h1>
+
+            Add Member
+
+        </h1>
+
+        <form method="POST">
+
+            <div class="select-users">
+
+                {% for user in users %}
+
+                    <label>
+
+                        <input
+                            type="checkbox"
+                            name="members"
+                            value="{{ user.username }}"
+                        >
+
+                        {{ user.username }}
+
+                    </label>
+
+                {% endfor %}
+
+            </div>
+
+            <button type="submit">
+
+                Add Selected Members
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

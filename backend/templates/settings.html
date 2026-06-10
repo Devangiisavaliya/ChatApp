@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Settings
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+</head>
+
+<body>
+
+<div class="settings-page">
+
+    <!-- SETTINGS CARD -->
+
+    <div class="settings-card">
+
+        <!-- TOP -->
+
+        <div class="settings-top">
+
+            <h1>
+                <i class="fa-solid fa-gear"></i>
+
+                Settings
+            </h1>
+
+        </div>
+
+        <!-- PROFILE -->
+
+        <div class="settings-profile">
+
+            {% if session.get('profile_photo') %}
+
+                <img
+                    src="{{ url_for('static', filename='uploads/' + session['profile_photo']) }}"
+                    class="settings-profile-photo"
+                >
+
+            {% else %}
+
+                <img
+                    src="{{ url_for('static', filename='default.png') }}"
+                    class="settings-profile-photo"
+                >
+
+            {% endif %}
+
+            <h2>
+                {{ session['username'] }}
+            </h2>
+
+            <p>
+                Manage your account
+            </p>
+
+        </div>
+
+        <!-- FORM -->
+
+        <form
+            method="POST"
+            enctype="multipart/form-data"
+            class="settings-form"
+        >
+
+            <div class="settings-input">
+
+                <label>
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    name="username"
+                    value="{{ session['username'] }}"
+                    required
+                >
+
+            </div>
+
+            <div class="settings-input">
+
+                <label>
+                    Profile Photo
+                </label>
+
+                <input
+                    type="file"
+                    name="profile_photo"
+                    accept="image/*"
+                >
+
+            </div>
+
+            <button
+                type="submit"
+                class="save-btn"
+            >
+
+                Save Changes
+
+            </button>
+
+        </form>
+
+        <!-- BACK -->
+
+        <a
+            href="/"
+            class="back-settings-btn"
+        >
+
+            Back
+
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

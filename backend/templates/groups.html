@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Groups
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+</head>
+
+<body class="dark-mode">
+
+<div class="groups-layout">
+
+    <!-- SIDEBAR -->
+
+    <div class="groups-sidebar">
+
+        <div class="groups-sidebar-top">
+
+            <h2>
+                ChatApp
+            </h2>
+
+            <div class="groups-sidebar-menu">
+
+                <a
+                    href="/"
+                    class="groups-menu-item"
+                >
+
+                    <i class="fa-solid fa-message"></i>
+
+                    <span>
+                        Chats
+                    </span>
+
+                </a>
+
+                <a
+                    href="/groups"
+                    class="groups-menu-item groups-active-menu"
+                >
+
+                    <i class="fa-solid fa-user-group"></i>
+
+                    <span>
+                        Groups
+                    </span>
+
+                </a>
+
+                <a
+                    href="/settings"
+                    class="groups-menu-item"
+                >
+
+                    <i class="fa-solid fa-gear"></i>
+
+                    <span>
+                        Settings
+                    </span>
+
+                </a>
+
+                <a
+                    href="/logout"
+                    class="groups-menu-item"
+                >
+
+                    <i class="fa-solid fa-right-from-bracket"></i>
+
+                    <span>
+                        Logout
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+        <!-- PROFILE -->
+
+        <div class="groups-profile">
+
+            <div class="groups-profile-image">
+
+                {% if session.get('profile_photo') %}
+
+                    <img
+                        src="{{ url_for('static', filename='uploads/' + session['profile_photo']) }}"
+                        class="groups-profile-photo"
+                    >
+
+                {% else %}
+
+                    <img
+                        src="{{ url_for('static', filename='default.png') }}"
+                        class="groups-profile-photo"
+                    >
+
+                {% endif %}
+
+                <span class="groups-online-dot"></span>
+
+            </div>
+
+            <div class="groups-profile-info">
+
+                <h3>
+                    {{ session['username'] }}
+                </h3>
+
+                <p>
+                    Online
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- GROUP LIST -->
+
+    <div class="groups-subsidebar">
+
+        <div class="groups-subsidebar-top">
+
+            <h2>
+                👥 Groups
+            </h2>
+
+            <a
+                href="/create_group"
+                class="groups-new-chat-btn"
+            >
+
+                <i class="fa-solid fa-plus"></i>
+
+            </a>
+
+        </div>
+
+        <!-- SEARCH -->
+
+        <div class="groups-search-box">
+
+            <i class="fa-solid fa-search"></i>
+
+            <input
+                type="text"
+                id="groupSearch"
+                placeholder="Search groups..."
+            >
+
+        </div>
+
+        <!-- GROUP LIST -->
+
+        <div class="groups-users-container">
+
+            {% if groups %}
+
+                {% for group in groups %}
+
+                <a
+                    href="/groups/chat/{{ group.group_name }}"
+                    class="groups-chat-user"
+                >
+
+                    {% if group.group_image %}
+
+                    <img
+                        src="{{ url_for('static', filename='uploads/' + group.group_image) }}"
+                        class="groups-chat-user-image"
+                    >
+
+                    {% else %}
+
+                    <img
+                        src="{{ url_for('static', filename='group.png') }}"
+                        class="groups-chat-user-image"
+                    >
+
+                    {% endif %}
+
+                    <div class="groups-chat-user-info">
+
+                        <h3>
+                            {{ group.group_name }}
+                        </h3>
+
+                        <p>
+                            Created By:
+                            {{ group.created_by }}
+                        </p>
+
+                    </div>
+
+                </a>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="groups-no-users">
+
+                    <h2>
+                        No Groups Found
+                    </h2>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <!-- CHAT AREA -->
+
+    <div class="groups-chat-area">
+
+        {% if selected_group %}
+
+        <iframe
+            src="/group_chat/{{ selected_group.group_name }}"
+            class="group-chat-frame"
+            style="width:100%; height:100%; border:none;"
+        ></iframe>
+
+        {% else %}
+
+        <div class="groups-empty-chat">
+
+            <div class="groups-empty-icon">
+                👥
+            </div>
+
+            <h1>
+                Group Chats
+            </h1>
+
+            <p>
+                Select group to start chatting
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+
+document.getElementById(
+    "groupSearch"
+).addEventListener(
+    "keyup",
+    function()
+    {
+        let value =
+            this.value.toLowerCase();
+
+        let groups =
+            document.querySelectorAll(
+                ".groups-chat-user"
+            );
+
+        groups.forEach(
+            function(group)
+            {
+                let text =
+                    group.innerText.toLowerCase();
+
+                if(text.includes(value))
+                {
+                    group.style.display =
+                        "flex";
+                }
+                else
+                {
+                    group.style.display =
+                        "none";
+                }
+            }
+        );
+    }
+);
+
+</script>
+
+</body>
+
+</html>
+
+
+
+<!-- =====================================
+     DARK MODE SCRIPT
+===================================== -->
+
+<script>
+
+function toggleDarkMode()
+{
+    let body =
+        document.body;
+
+    body.classList.toggle(
+        "dark-mode"
+    );
+
+    body.classList.toggle(
+        "light-mode"
+    );
+
+    if(body.classList.contains("dark-mode"))
+    {
+        localStorage.setItem(
+            "theme",
+            "dark"
+        );
+    }
+    else
+    {
+        localStorage.setItem(
+            "theme",
+            "light"
+        );
+    }
+}
+
+window.onload = function()
+{
+    let savedTheme =
+        localStorage.getItem(
+            "theme"
+        );
+
+    if(savedTheme == "light")
+    {
+        document.body.classList.remove(
+            "dark-mode"
+        );
+
+        document.body.classList.add(
+            "light-mode"
+        );
+    }
+}
+document.getElementById(
+    "groupSearch"
+).addEventListener(
+    "keyup",
+    function()
+    {
+        let value =
+            this.value.toLowerCase();
+
+        let groups =
+            document.querySelectorAll(
+                ".groups-chat-user"
+            );
+
+        groups.forEach(
+            function(group)
+            {
+                let text =
+                    group.innerText.toLowerCase();
+
+                if(text.includes(value))
+                {
+                    group.style.display =
+                        "flex";
+                }
+                else
+                {
+                    group.style.display =
+                        "none";
+                }
+            }
+        );
+    }
+);
+</script>
+
+</body>
+
+</html>

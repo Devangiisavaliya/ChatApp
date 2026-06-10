@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Chat App</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <meta http-equiv="refresh" content="3">
+
+</head>
+
+<body>
+
+<div class="main-container">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <h2>Users</h2>
+
+        {% for user in users %}
+
+        <div class="user-box">
+
+            <strong>{{ user.username }}</strong>
+
+            {% if user.status == 'online' %}
+
+                <span class="online">
+                    Online
+                </span>
+
+            {% else %}
+
+                <span class="offline">
+                    Offline
+                </span>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-container">
+
+        <h1>Flask Chat App</h1>
+
+        <h3>
+            Welcome {{ username }}
+        </h3>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+        <form method="POST">
+
+            <textarea name="message"
+                      placeholder="Enter Message"
+                      required></textarea>
+
+            <button type="submit">
+                Send
+            </button>
+
+        </form>
+
+        <div class="messages">
+
+            {% for msg in messages %}
+
+            <div class="message-box">
+
+                <h3>{{ msg.username }}</h3>
+
+                <p>{{ msg.message }}</p>
+
+                <small>{{ msg.created_at }}</small>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

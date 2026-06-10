@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Register</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+<div class="register-page">
+
+    <!-- LEFT SIDE -->
+
+    <div class="register-left">
+
+        <div class="overlay"></div>
+
+        <div class="left-content">
+
+            <h1>
+                💬 ChatApp
+            </h1>
+
+            <p>
+                Create Your Account & Start Chatting
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+
+    <div class="register-right">
+
+        <div class="register-box">
+
+            <h2>
+                Create Account
+            </h2>
+
+            <p class="sub-text">
+                Register to continue
+            </p>
+
+            <form
+                method="POST"
+                enctype="multipart/form-data"
+            >
+
+                <div class="input-group">
+
+                    <input
+                        type="text"
+                        name="username"
+                        placeholder="Enter Username"
+                        required
+                    >
+
+                </div>
+                <div class="input-group">
+
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Enter Email"
+                        required
+                    >
+                </div>
+                <div class="input-group">
+
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="Enter Password"
+                        required
+                    >
+
+                </div>
+
+                <div class="input-group">
+
+                    <input
+                        type="file"
+                        name="profile_photo"
+                        accept="image/*"
+                    >
+
+                </div>
+                <button type="submit">
+
+                    Register
+
+                </button>
+
+            </form>
+
+            <div class="bottom-text">
+
+                Already have account?
+
+                <a href="/login">
+
+                    Login
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

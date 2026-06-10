@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Private Chat</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+    
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+
+</head>
+
+<body>
+
+<div class="chat-page">
+
+    <!-- SIDEBAR -->
+
+
+    <!-- CHAT AREA -->
+
+    <div class="chat-main">
+
+        <!-- TOP BAR -->
+
+        <div class="chat-topbar">
+
+            <div class="topbar-left">
+
+                <img
+                    src="{{ url_for('static', filename='default.png') }}"
+                    class="topbar-profile"
+                >
+
+                <div>
+
+                    <h3>
+
+                        {{ receiver }}
+
+                    </h3>
+                    <p id="typing-status">
+
+                    {% if receiver_data.status == "online" %}
+
+                        Online
+
+                    {% else %}
+
+                        Last seen:
+                        {{ receiver_data.last_seen }}
+
+                    {% endif %}
+
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="topbar-icons">
+
+                <button onclick="startVoiceCall()">
+
+                    <i class="fa-solid fa-phone"></i>
+
+                </button>
+
+                <button onclick="startVideoCall()">
+
+                    <i class="fa-solid fa-video"></i>
+
+                </button>
+                <button onclick="endCall()">
+
+                    <i class="fa-solid fa-phone-slash"></i>
+
+                </button>
+                <button onclick="toggleDarkMode()">
+                    🌙
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- MESSAGES -->
+
+        <div
+            class="chat-messages"
+            id="messages"
+        >
+
+            {% for msg in messages %}
+
+                {% if msg.sender == username %}
+
+                    <div class="message-row right">
+
+                        <div class="message-bubble my-message">
+                        <p onclick="setReply('{{ msg.message }}')">
+
+                        {% if msg.deleted_for_everyone == 1 %}
+
+                            <i>
+                                You deleted this message
+                            </i>
+
+                        {% else %}
+
+                            {{ msg.message }}
+
+                        {% endif %}
+
+                        </p>
+                        <div class="message-options">
+
+                            <button class="menu-btn"
+                                onclick="toggleMenu({{ msg.id }})">
+                                ⋮
+                            </button>
+
+                            <div class="menu-box"
+                                id="menu-{{ msg.id }}">
+
+                                <button onclick="deleteForMe({{ msg.id }})">
+                                    Delete For Me
+                                </button>
+
+                                <button onclick="deleteForEveryone({{ msg.id }})">
+                                    Delete For Everyone
+                                </button>
+
+                            </div>
+
+                        </div>
+                        <div class="reaction-box"onclick="event.stopPropagation()">
+
+                                <span onclick="event.stopPropagation(); sendReaction({{ msg.id }}, '👍')">
+                                    👍
+                                </span>
+
+                                <span onclick="event.stopPropagation(); sendReaction({{ msg.id }}, '❤️')">
+                                    ❤️
+                                </span>
+
+                                <span onclick="event.stopPropagation(); sendReaction({{ msg.id }}, '😂')">
+                                    😂
+                                </span>
+
+                                <span onclick="event.stopPropagation(); sendReaction({{ msg.id }}, '🔥')">
+                                    🔥
+                                </span>
+
+                            </div>
+                            {% if msg.deleted_for_everyone != 1 %}
+                            <div id="reaction-{{ msg.id }}" class="show-reaction">
+
+                                {{ msg.reaction if msg.reaction else "" }}
+
+                            </div>
+                        
+                        {% if msg.reply_message %}
+
+                            <div class="reply-preview">
+
+                                {{ msg.reply_message }}
+
+                            </div>
+
+                         {% endif %}
+                            {% if msg.file_name %}
+
+                                {% set ext = msg.file_name.split('.')[-1].lower() %}
+
+                                {% if ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+
+                                    <img
+                                        src="/static/uploads/{{ msg.file_name }}"
+                                        class="chat-image"
+                                    >
+
+                                {% elif ext in ['mp4', 'webm', 'mov'] %}
+
+                                    <video controls class="chat-video">
+
+                                        <source
+                                            src="/static/uploads/{{ msg.file_name }}"
+                                        >
+
+                                    </video>
+
+                                {% else %}
+
+                                    <div class="file-message">
+
+                                        <a
+                                            href="/static/uploads/{{ msg.file_name }}"
+                                            target="_blank"
+                                            class="file-link"
+                                        >
+                                            📄 Open File
+                                        </a>
+
+                                    </div>
+
+                                {% endif %}
+                                {% endif %}
+                            {% if msg.voice %}
+
+                                <audio controls>
+
+                                    <source
+                                        src="/static/voice_notes/{{ msg.voice }}"
+                                        type="audio/webm"
+                                    >
+
+                                </audio>
+
+                            {% endif %}
+
+                            <small
+                                id="status-{{ msg.id }}"
+                            >
+                            
+                                {{ msg.seen_status }}
+
+                            </small>
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="message-row left">
+
+                        <div class="message-bubble other-message">
+                         <p onclick="setReply('{{ msg.message }}')">
+
+                            {% if msg.deleted_for_everyone == 1 %}
+
+                                <i>
+                                    This message was deleted
+                                </i>
+
+                            {% else %}
+
+                                {{ msg.message }}
+
+                            {% endif %}
+
+                        </p>
+                         <div class="message-options">
+
+                            <button class="menu-btn"
+                                onclick="toggleMenu({{ msg.id }})">
+                                ⋮
+                            </button>
+
+                            <div class="menu-box"
+                                id="menu-{{ msg.id }}">
+
+                                <button onclick="deleteForMe({{ msg.id }})">
+                                    Delete For Me
+                                </button>
+
+                            </div>
+
+                        </div>
+                         <div class="reaction-box">
+
+                                <span onclick="sendReaction({{ msg.id }}, '👍')">👍</span>
+
+                                <span onclick="sendReaction({{ msg.id }}, '❤️')">❤️</span>
+
+                                <span onclick="sendReaction({{ msg.id }}, '😂')">😂</span>
+
+                                <span onclick="sendReaction({{ msg.id }}, '🔥')">🔥</span>
+
+                            </div>
+                             {% if msg.deleted_for_everyone == 1 %}
+
+                    {% else %}
+                            <div id="reaction-{{ msg.id }}" class="show-reaction">
+
+                                {{ msg.reaction if msg.reaction else "" }}
+
+                            </div>
+                        {% if msg.reply_message %}
+
+                         <div class="reply-preview">
+
+                            {{ msg.reply_message }}
+
+                        </div>
+
+                        {% endif %}
+
+                            {% if msg.file_name %}
+
+                                {% set ext = msg.file_name.split('.')[-1].lower() %}
+
+                                {% if ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+
+                                    <img
+                                        src="/static/uploads/{{ msg.file_name }}"
+                                        class="chat-image"
+                                    >
+
+                                {% elif ext in ['mp4', 'webm', 'mov'] %}
+
+                                    <video controls class="chat-video">
+
+                                        <source
+                                            src="/static/uploads/{{ msg.file_name }}"
+                                        >
+
+                                    </video>
+
+                                {% else %}
+
+                                    <div class="file-message">
+
+                                        <a
+                                            href="/static/uploads/{{ msg.file_name }}"
+                                            target="_blank"
+                                            class="file-link"
+                                        >
+                                            📄 Open File
+                                        </a>
+
+                                    </div>
+
+                                {% endif %}
+
+                            {% endif %}
+                            
+                            {% if msg.voice %}
+
+                                <audio controls>
+
+                                    <source
+                                        src="/static/voice_notes/{{ msg.voice }}"
+                                        type="audio/webm"
+                                    >
+
+                                </audio>
+                            {% endif %}
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                {% endif %}
+
+            {% endfor %}
+
+        </div>
+
+        <!-- INPUT -->
+        <div
+    id="replyBox"
+    class="reply-box"
+    style="display:none;"
+>
+
+    <span id="replyText"></span>
+
+    <button onclick="cancelReply()">
+
+        ✖
+
+    </button>
+
+</div>
+        <div class="chat-input-area">
+            
+
+            <button onclick="addEmoji('😊')">
+
+                😊
+
+            </button>
+
+            <button onclick="addEmoji('🔥')">
+
+                🔥
+
+            </button>
+
+            <button onclick="addEmoji('❤️')">
+
+                ❤️
+
+            </button>
+
+            <input
+                type="text"
+                id="message"
+                placeholder="Type message..."
+                onkeyup="typingStatus()"
+            >
+
+            <input
+                type="file"
+                id="fileInput"
+                hidden
+            >
+
+            <label
+                for="fileInput"
+                class="upload-btn"
+            >
+                <i class="fa-solid fa-image"></i>
+            </label>
+
+            <button onclick="startRecording()">
+
+                🎤
+
+            </button>
+
+            <button onclick="sendMessage()">
+
+                <i class="fa-solid fa-paper-plane"></i>
+
+            </button>
+
+        </div>
+
+        <!-- VIDEO AREA -->
+
+        <div class="video-area">
+
+            <video
+                id="localVideo"
+                autoplay
+                muted
+            ></video>
+
+            <video
+                id="remoteVideo"
+                autoplay
+            ></video>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- AUDIO -->
+
+<audio id="notificationSound">
+
+    <source
+        src="https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3"
+        type="audio/mpeg"
+    >
+
+</audio>
+
+<script>
+
+let socket = io();
+
+let sender = "{{ username }}";
+
+let receiver = "{{ receiver }}";
+
+let room =
+    [sender, receiver]
+    .sort()
+    .join("_");
+
+socket.emit(
+    "join",
+    {
+        room: room
+    }
+);
+
+// ======================
+// WEBRTC VARIABLES
+// ======================
+
+let peerConnection;
+
+let localStream;
+
+const servers = {
+    iceServers: [
+        {
+            urls:
+            "stun:stun.l.google.com:19302"
+        }
+    ]
+};
+
+
+// ======================
+// CREATE PEER
+// ======================
+
+function createPeerConnection()
+{
+    // OLD CONNECTION CLOSE
+    if(peerConnection)
+    {
+        peerConnection.close();
+    }
+
+    peerConnection =
+        new RTCPeerConnection(
+            servers
+        );
+
+    // REMOTE VIDEO
+    peerConnection.ontrack =
+        function(event)
+        {
+            document.getElementById(
+                "remoteVideo"
+            ).srcObject =
+                event.streams[0];
+        };
+
+    // ICE CANDIDATE
+    peerConnection.onicecandidate =
+        function(event)
+        {
+            if(event.candidate)
+            {
+                socket.emit(
+                    "ice_candidate",
+                    {
+                        room: room,
+                        candidate:
+                            event.candidate
+                    }
+                );
+            }
+        };
+
+    // CONNECTION STATE
+    peerConnection.onconnectionstatechange =
+        function()
+        {
+            if(
+                peerConnection.connectionState
+                === "disconnected"
+            )
+            {
+                endCall();
+            }
+        };
+}
+
+// ======================
+// START VOICE CALL
+// ======================
+
+async function startVoiceCall()
+{
+    document.querySelector(
+        ".video-area"
+    ).style.display = "flex";
+
+    localStream =
+        await navigator.mediaDevices.getUserMedia(
+            {
+                audio: true,
+                video: false
+            }
+        );
+
+    createPeerConnection();
+
+    localStream
+    .getTracks()
+    .forEach(
+        track =>
+        peerConnection.addTrack(
+            track,
+            localStream
+        )
+    );
+
+    let offer =
+        await peerConnection.createOffer();
+
+    await peerConnection.setLocalDescription(
+        offer
+    );
+
+    socket.emit(
+    "call_user",
+    {
+        room: room,
+        offer: offer,
+        type: "voice",
+        caller: sender
+    }
+);
+}
+
+
+// ======================
+// START VIDEO CALL
+// ======================
+
+async function startVideoCall()
+{
+    document.querySelector(
+        ".video-area"
+    ).style.display = "flex";
+
+    localStream =
+        await navigator.mediaDevices.getUserMedia(
+            {
+                audio: true,
+                video: true
+            }
+        );
+
+    document.getElementById(
+        "localVideo"
+    ).srcObject =
+        localStream;
+
+    createPeerConnection();
+
+    localStream
+    .getTracks()
+    .forEach(
+        track =>
+        peerConnection.addTrack(
+            track,
+            localStream
+        )
+    );
+
+    let offer =
+        await peerConnection.createOffer();
+
+    await peerConnection.setLocalDescription(
+        offer
+    );
+
+    socket.emit(
+    "call_user",
+    {
+        room: room,
+        offer: offer,
+        type: "video",
+        caller: sender
+    }
+);
+}
+
+
+// ======================
+// INCOMING CALL
+// ======================
+
+socket.on(
+    "incoming_call",
+    async function(data)
+    {
+        let acceptCall =
+            confirm(
+                "Incoming " +
+                data.type +
+                " call from " +
+                data.caller
+            );
+
+        if(!acceptCall)
+        {
+            return;
+        }
+
+        document.querySelector(
+            ".video-area"
+        ).style.display = "flex";
+
+        createPeerConnection();
+
+        localStream =
+            await navigator.mediaDevices.getUserMedia(
+                {
+                    audio: true,
+                    video:
+                        data.type == "video"
+                }
+            );
+
+        if(data.type == "video")
+        {
+            document.getElementById(
+                "localVideo"
+            ).srcObject =
+                localStream;
+        }
+
+        localStream
+        .getTracks()
+        .forEach(
+            track =>
+            peerConnection.addTrack(
+                track,
+                localStream
+            )
+        );
+
+        await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(
+                data.offer
+            )
+        );
+
+        let answer =
+            await peerConnection.createAnswer();
+
+        await peerConnection.setLocalDescription(
+            answer
+        );
+
+        socket.emit(
+            "answer_call",
+            {
+                room: room,
+                answer: answer
+            }
+        );
+    }
+);
+
+
+// ======================
+// CALL ANSWERED
+// ======================
+
+socket.on(
+    "call_answered",
+    async function(data)
+    {
+        await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(
+                data.answer
+            )
+        );
+    }
+);
+
+// ======================
+// CALL ENDED
+// ======================
+
+socket.on(
+    "call_ended",
+    function()
+    {
+        if(localStream)
+        {
+            localStream
+            .getTracks()
+            .forEach(
+                track => track.stop()
+            );
+        }
+
+        if(peerConnection)
+        {
+            peerConnection.close();
+        }
+
+        document.getElementById(
+            "localVideo"
+        ).srcObject = null;
+
+        document.getElementById(
+            "remoteVideo"
+        ).srcObject = null;
+
+        document.querySelector(
+            ".video-area"
+        ).style.display = "none";
+
+        alert("Call Ended");
+    }
+);
+
+// ======================
+// ICE CANDIDATE
+// ======================
+
+socket.on(
+    "ice_candidate",
+    async function(data)
+    {
+        if(data.candidate)
+        {
+            await peerConnection.addIceCandidate(
+                new RTCIceCandidate(
+                    data.candidate
+                )
+            );
+        }
+    }
+);
+
+
+// ======================
+// END CALL
+// ======================
+
+function endCall()
+{
+    if(localStream)
+    {
+        localStream
+        .getTracks()
+        .forEach(
+            track => track.stop()
+        );
+    }
+
+    if(peerConnection)
+    {
+        peerConnection.close();
+    }
+
+    document.getElementById(
+        "localVideo"
+    ).srcObject = null;
+
+    document.getElementById(
+        "remoteVideo"
+    ).srcObject = null;
+
+    document.querySelector(
+        ".video-area"
+    ).style.display = "none";
+
+    socket.emit(
+        "end_call",
+        {
+            room: room
+        }
+    );
+}
+
+
+// ======================
+// DARK MODE
+// ======================
+
+function toggleDarkMode()
+{
+    document.body.classList.toggle(
+        "dark-mode"
+    );
+}
+
+
+// ======================
+// NOTIFICATION
+// ======================
+
+if(Notification.permission !== "granted")
+{
+    Notification.requestPermission();
+}
+
+function playSound()
+{
+    document.getElementById(
+        "notificationSound"
+    ).play();
+}
+
+function showNotification(
+    title,
+    body
+)
+{
+    playSound();
+
+    if(Notification.permission === "granted")
+    {
+        new Notification(
+            title,
+            {
+                body: body,
+                icon: "/static/default.png"
+            }
+        );
+    }
+}
+// ======================
+// AUTO SCROLL
+// ======================
+
+function scrollToBottom()
+{
+    let messages =
+        document.getElementById(
+            "messages"
+        );
+
+    messages.scrollTop =
+        messages.scrollHeight;
+}
+
+// ======================
+// RECEIVE MESSAGE
+// ======================
+
+socket.on(
+    "receive_message",
+    function(data)
+    {
+        if(data.sender != sender)
+        {
+            showNotification(
+                data.sender,
+                data.message
+            );
+        }
+
+        let messages =
+            document.getElementById(
+                "messages"
+            );
+
+        let voiceHTML = "";
+
+        let replyHTML = "";
+
+       
+        let fileHTML = "";
+
+        if(data.file_name)
+        {
+            let ext =
+                data.file_name
+                .split('.')
+                .pop()
+                .toLowerCase();
+
+            // IMAGE
+            if(
+                ['jpg','jpeg','png','gif']
+                .includes(ext)
+            )
+            {
+                fileHTML =
+                `
+                <img
+                    src="/static/uploads/${data.file_name}"
+                    class="chat-image"
+                >
+                `;
+            }
+
+            // VIDEO
+            else if(
+                ['mp4','webm','mov']
+                .includes(ext)
+            )
+            {
+                fileHTML =
+                `
+                <video controls class="chat-video">
+
+                    <source
+                        src="/static/uploads/${data.file_name}"
+                    >
+
+                </video>
+                `;
+            }
+
+            // PDF/DOC
+            else
+            {
+                fileHTML =
+                `
+                <a
+                    href="/static/uploads/${data.file_name}"
+                    target="_blank"
+                    class="file-link"
+                >
+                    📄 ${data.file_name}
+                </a>
+                `;
+            }
+        }
+
+        if(data.reply_message)
+        {
+            replyHTML =
+            `
+            <div class="reply-preview">
+
+                ${data.reply_message}
+
+            </div>
+            `;
+        }
+        if(data.voice)
+        {
+            voiceHTML =
+            `
+            <audio controls>
+
+                <source
+                    src="/static/voice_notes/${data.voice}"
+                    type="audio/webm"
+                >
+
+            </audio>
+            `;
+        }
+
+        let side =
+            data.sender == sender
+            ? "right"
+            : "left";
+
+        let bubble =
+            data.sender == sender
+            ? "my-message"
+            : "other-message";
+
+messages.innerHTML +=
+`
+<div class="message-row ${side}">
+
+    <div class="message-bubble ${bubble}"
+     onclick="setReply('${data.message}')">
+
+        ${replyHTML}
+
+        ${data.message ? `<p>${data.message}</p>` : ""}
+
+        ${fileHTML}
+        ${voiceHTML}
+
+        <!-- REACTIONS -->
+
+        <div class="reaction-box">
+
+            <span onclick="addReaction(this,'❤️')">❤️</span>
+
+            <span onclick="addReaction(this,'🔥')">🔥</span>
+
+            <span onclick="addReaction(this,'😂')">😂</span>
+
+            <span onclick="addReaction(this,'👍')">👍</span>
+
+        </div>
+    </div>
+
+</div>
+`;
+
+// AUTO SCROLL
+scrollToBottom();
+    }
+);
+
+// PAGE LOAD AUTO SCROLL
+
+window.onload = function()
+{
+    scrollToBottom();
+};
+// ======================
+// SEND MESSAGE
+// ======================
+
+let voiceFileName = "";
+let replyMessage = "";
+
+async function sendMessage()
+{
+    let message =
+        document.getElementById(
+            "message"
+        ).value;
+
+    let fileInput =
+        document.getElementById(
+            "fileInput"
+        );
+
+    let selectedFile =
+        fileInput.files[0];
+
+let uploadedFile = "";
+
+if(
+    message.trim() == "" &&
+    !selectedFile &&
+    !voiceFileName
+)
+{
+    return;
+}
+
+// FILE UPLOAD
+if(selectedFile)
+{
+    let formData =
+        new FormData();
+
+    formData.append(
+        "file",
+        selectedFile
+    );
+
+    let response =
+        await fetch(
+            "/upload_file",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+    let result =
+        await response.json();
+
+    uploadedFile =
+        result.filename;
+}
+
+// SEND SOCKET MESSAGE
+socket.emit(
+    "send_message",
+    {
+        sender: sender,
+        receiver: receiver,
+        room: room,
+        message: message,
+        file_name: uploadedFile,
+        voice: voiceFileName,
+        reply_message: replyMessage
+    }
+);
+
+// CLEAR INPUT
+document.getElementById(
+    "message"
+).value = "";
+
+fileInput.value = "";
+
+voiceFileName = "";
+
+cancelReply();
+}
+// ======================
+// TYPING
+// ======================
+
+function typingStatus()
+{
+    socket.emit(
+        "typing",
+        {
+            username: sender,
+            room: room
+        }
+    );
+}
+
+socket.on(
+    "show_typing",
+    function(data)
+    {
+        let typingBox =
+            document.getElementById(
+                "typing-status"
+            );
+
+        typingBox.innerHTML =
+            data.username +
+            " typing...";
+
+        setTimeout(
+            function()
+            {
+                typingBox.innerHTML =
+                    "Online";
+            },
+            1000
+        );
+    }
+);
+// ======================
+// REPLY MESSAGE
+// ======================
+
+function setReply(message)
+{
+    replyMessage = message;
+
+    document.getElementById(
+        "replyBox"
+    ).style.display = "flex";
+
+    document.getElementById(
+        "replyText"
+    ).innerHTML = message;
+}
+
+function cancelReply()
+{
+    replyMessage = "";
+
+    document.getElementById(
+        "replyBox"
+    ).style.display = "none";
+}
+
+// ======================
+// EMOJI
+// ======================
+
+function addEmoji(emoji)
+{
+    document.getElementById(
+        "message"
+    ).value += emoji;
+}
+
+
+// ======================
+// VOICE RECORD
+// ======================
+
+let mediaRecorder;
+
+let audioChunks = [];
+
+async function startRecording()
+{
+    let stream =
+        await navigator.mediaDevices.getUserMedia(
+            {
+                audio: true
+            }
+        );
+
+    mediaRecorder =
+        new MediaRecorder(stream);
+
+    mediaRecorder.start();
+
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable =
+        function(event)
+        {
+            audioChunks.push(
+                event.data
+            );
+        };
+
+    mediaRecorder.onstop =
+        async function()
+        {
+            let audioBlob =
+                new Blob(
+                    audioChunks,
+                    {
+                        type: "audio/webm"
+                    }
+                );
+
+            let formData =
+                new FormData();
+
+            formData.append(
+                "audio",
+                audioBlob,
+                "voice.webm"
+            );
+
+            let response =
+                await fetch(
+                    "/upload_voice",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+            let result =
+                await response.json();
+
+            voiceFileName =
+                result.filename;
+
+            alert(
+                "Voice Recorded"
+            );
+        };
+
+    setTimeout(
+        function()
+        {
+            mediaRecorder.stop();
+        },
+        5000
+    );
+}
+
+
+// ======================
+// MESSAGE SEEN
+// ======================
+
+socket.on(
+    "receive_message",
+    function(data)
+    {
+        if(data.sender != sender)
+        {
+            socket.emit(
+                "message_seen",
+                {
+                    message_id:
+                        data.message_id,
+
+                    room: room
+                }
+            );
+        }
+    }
+);
+
+socket.on(
+    "seen_update",
+    function(data)
+    {
+        let status =
+            document.getElementById(
+                "status-" +
+                data.message_id
+            );
+
+        if(status)
+        {
+            status.innerHTML =
+                data.status;
+        }
+    }
+);
+function addReaction(element, emoji)
+{
+    let bubble =
+        element.closest(".message-bubble");
+
+    let result =
+        bubble.querySelector(".reaction-result");
+
+    result.innerHTML = emoji;
+}
+// ======================
+// SEND REACTION
+// ======================
+
+function sendReaction(message_id, emoji)
+{
+    socket.emit(
+        "send_reaction",
+        {
+            message_id: message_id,
+            emoji: emoji,
+            room: room
+        }
+    );
+}
+
+
+// ======================
+// RECEIVE REACTION
+// ======================
+
+socket.on(
+    "receive_reaction",
+    function(data)
+    {
+        let reactionBox =
+            document.getElementById(
+                "reaction-" + data.message_id
+            );
+
+        if(reactionBox)
+        {
+            reactionBox.innerHTML =
+                data.emoji;
+        }
+    }
+);
+socket.on(
+    "reaction_notification",
+    function(data)
+    {
+        showNotification(
+            "New Reaction",
+            data.message
+        );
+    }
+);
+function toggleMenu(messageId)
+{
+    // બધા menu બંધ
+    document
+        .querySelectorAll(".menu-box")
+        .forEach(menu =>
+        {
+            menu.style.display = "none";
+        });
+
+    // જે menu click કર્યું એ open
+    let menu =
+        document.getElementById(
+            "menu-" + messageId
+        );
+
+    menu.style.display = "block";
+}
+document.addEventListener(
+    "click",
+    function(e)
+    {
+        if(
+            !e.target.closest(".message-options")
+        )
+        {
+            document
+                .querySelectorAll(".menu-box")
+                .forEach(menu =>
+                {
+                    menu.style.display = "none";
+                });
+        }
+    }
+);
+function deleteForMe(messageId)
+{
+    fetch(
+        "/delete_for_me/" + messageId,
+        {
+            method: "POST"
+        }
+    )
+    .then(response => response.json())
+    .then(data =>
+    {
+        if(data.success)
+        {
+            location.reload();
+        }
+    });
+}
+function deleteForEveryone(messageId)
+{
+    fetch(
+        "/delete_for_everyone/" + messageId,
+        {
+            method: "POST"
+        }
+    )
+    .then(response => response.json())
+    .then(data =>
+    {
+        console.log(data);
+
+        if(data.success)
+        {
+            location.reload();
+        }
+    });
+} 
+</script>
+
+</body>
+
+</html>

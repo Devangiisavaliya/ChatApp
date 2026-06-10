@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Group Chat
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+
+</head>
+
+<body class="light-mode group-chat-body">
+
+<!-- NOTIFICATION SOUND -->
+
+<audio id="notificationSound">
+
+    <source
+        src="https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3"
+        type="audio/mpeg"
+    >
+
+</audio>
+
+<!-- GROUP SOUND -->
+
+<audio id="groupSound">
+
+    <source
+        src="https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3"
+        type="audio/mpeg"
+    >
+
+</audio>
+
+<!-- MAIN CHAT -->
+
+<div class="group-chat-container">
+
+    <!-- HEADER -->
+
+    <div class="group-chat-header">
+
+        <!-- LEFT -->
+
+        <div class="group-header-info">
+
+            <img
+                src="/static/uploads/{{ group_data.group_image }}"
+                class="group-chat-image"
+            >
+
+            <div class="group-header-text">
+
+                <h2>
+                    {{ group_name }}
+                </h2>
+
+                <p id="typing-status"></p>
+
+                <p id="online-members-count">
+                    0 Online
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT -->
+
+        <div class="header-buttons">
+
+            <button
+                onclick="startVoiceCall()"
+                class="icon-btn"
+            >
+
+                <i class="fa-solid fa-phone"></i>
+
+            </button>
+
+            <button
+                onclick="startVideoCall()"
+                class="icon-btn"
+            >
+
+                <i class="fa-solid fa-video"></i>
+
+            </button>
+
+            <button
+                onclick="endCall()"
+                class="icon-btn"
+            >
+
+                <i class="fa-solid fa-phone-slash"></i>
+
+            </button>
+
+            <button
+                onclick="toggleDarkMode()"
+                class="icon-btn"
+            >
+
+                🌙
+
+            </button>
+
+            <!-- 3 DOT MENU -->
+
+            <div class="chat-menu-wrapper">
+
+                <button
+                    class="icon-btn"
+                    onclick="toggleChatMenu()"
+                >
+
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+
+                </button>
+
+                <!-- DROPDOWN -->
+
+                <div
+                    class="chat-dropdown-menu"
+                    id="chatDropdownMenu"
+                >
+
+                    <!-- ADD MEMBER -->
+
+                    <a
+                        href="/add_member/{{ group_name }}"
+                        class="chat-dropdown-link"
+                        target="_parent"
+                    >
+
+                        <i class="fa-solid fa-user-plus"></i>
+
+                        Add Member
+
+                    </a>
+
+                    <!-- MEMBERS TITLE -->
+
+                    <div class="chat-members-title">
+
+                        Group Members ({{ selected_group_members|length }})
+
+                    </div>
+
+                    <!-- MEMBERS -->
+
+                    {% for member in selected_group_members %}
+
+                    <div class="chat-member-row">
+
+                        <span>
+
+                            {{ member.username }}
+
+                            {% if member.role == "admin" %}
+
+                                (Admin)
+
+                            {% endif %}
+
+                        </span>
+
+                        {% if session['username'] == selected_group.created_by and member.username != session['username'] %}
+
+                        <a
+                            href="/remove_member/{{ group_name }}/{{ member.username }}"
+                            class="chat-remove-btn"
+                            target="_parent"
+                        >
+
+                            Remove
+
+                        </a>
+
+                        {% endif %}
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MESSAGES -->
+
+    <div
+        id="messages"
+        class="messages"
+    >
+{% for msg in messages %}
+
+<div class="
+    {% if msg.sender == username %}
+        my-message
+    {% else %}
+        other-message
+    {% endif %}
+"
+onclick="replyOnly(event,'{{ msg.message }}')"
+>
+<div class="reaction-picker">
+
+    <span onclick="sendGroupReaction('{{ msg.id }}','👍')">
+        👍
+    </span>
+
+    <span onclick="sendGroupReaction('{{ msg.id }}','❤️')">
+        ❤️
+    </span>
+
+    <span onclick="sendGroupReaction('{{ msg.id }}','😂')">
+        😂
+    </span>
+
+    <span onclick="sendGroupReaction('{{ msg.id }}','🔥')">
+        🔥
+    </span>
+
+</div>
+
+{% if msg.reaction %}
+
+<div
+    class="show-reaction"
+    id="group-reaction-{{ msg.id }}"
+>
+    {{ msg.reaction }}
+</div>
+
+{% else %}
+
+<div
+    class="show-reaction"
+    id="group-reaction-{{ msg.id }}"
+    style="display:none;"
+>
+</div>
+
+{% endif %}
+<b>{{ msg.sender }}</b>
+
+<div class="message-options">
+
+    <button
+        class="menu-btn"
+        onclick="toggleMenu({{ msg.id }})"
+    >
+        ⋮
+    </button>
+
+    <div
+    class="menu-box"
+    id="menu-{{ msg.id }}"
+    >
+
+    <button
+        onclick="groupDeleteForMe({{ msg.id }})"
+    >
+        Delete For Me
+    </button>
+
+    {% if msg.sender == username %}
+
+    <button
+        onclick="groupDeleteForEveryone({{ msg.id }})"
+    >
+        Delete For Everyone
+    </button>
+
+    {% endif %}
+
+</div>
+
+</div>
+
+    {% if msg.reply_message %}
+
+    <div class="reply-message-box">
+
+        <small>
+            Reply
+        </small>
+
+        <p>
+            {{ msg.reply_message }}
+        </p>
+
+    </div>
+
+    {% endif %}
+{% if msg.deleted_for_everyone %}
+
+    {% if msg.sender == username %}
+        <i>You deleted this message</i>
+    {% else %}
+        <i>This message was deleted</i>
+    {% endif %}
+
+{% elif msg.deleted_by and msg.sender == username %}
+{% else %}
+    {{ msg.message }}
+{% endif %}
+{% if not msg.deleted_for_everyone %}
+    {% if msg.file_name %}
+
+    {% set ext = msg.file_name.split('.')[-1].lower() %}
+
+    {% if ext in ['jpg','jpeg','png','gif'] %}
+
+        <img
+            src="/static/uploads/{{ msg.file_name }}"
+            class="chat-image"
+        >
+
+    {% elif ext in ['mp4','webm','mov'] %}
+
+        <video controls class="chat-video">
+
+            <source
+                src="/static/uploads/{{ msg.file_name }}"
+            >
+
+        </video>
+
+    {% else %}
+
+        <div class="file-message">
+
+            <a
+                href="/static/uploads/{{ msg.file_name }}"
+                target="_blank"
+                class="file-link"
+            >
+                📄 Open File
+            </a>
+
+        </div>
+
+    {% endif %}
+
+{% endif %}
+
+    {% if msg.voice %}
+
+        <br>
+
+        <audio controls>
+
+            <source
+                src="/static/voice_notes/{{ msg.voice }}"
+                type="audio/webm"
+            >
+
+        </audio>
+
+    {% endif %}
+{% endif %}
+    <br>
+
+    <small>
+
+        {{ msg.seen_status }}
+
+    </small>
+
+</div>
+
+{% endfor %}
+
+    </div>
+<!-- REPLY PREVIEW -->
+
+<div
+    id="replyBox"
+    class="reply-preview"
+    style="display:none;"
+>
+
+    <small>
+        Replying to
+    </small>
+
+    <p id="replyText"></p>
+
+    <button onclick="cancelReply()">
+
+        ✖
+
+    </button>
+
+</div>
+    <!-- INPUT -->
+
+    <div class="chat-input-area">
+
+        <!-- EMOJI -->
+
+        <button
+            onclick="addEmoji('😊')"
+            class="icon-btn"
+        >
+            😊
+        </button>
+
+        <button
+            onclick="addEmoji('🔥')"
+            class="icon-btn"
+        >
+            🔥
+        </button>
+
+        <button
+            onclick="addEmoji('❤️')"
+            class="icon-btn"
+        >
+            ❤️
+        </button>
+
+        <!-- MESSAGE -->
+
+        <input
+            type="text"
+            id="message"
+            placeholder="Type message..."
+            onkeyup="typingStatus(event)"
+        >
+
+        <!-- IMAGE -->
+
+        <label
+            for="groupFile"
+            class="icon-btn"
+        >
+
+            <i class="fa-solid fa-image"></i>
+
+        </label>
+
+        <input
+            type="file"
+            id="groupFile"
+            hidden
+        >
+
+        <!-- VOICE -->
+
+        <button
+            onclick="startRecording()"
+            class="icon-btn"
+        >
+            🎤
+        </button>
+
+        <!-- SEND -->
+
+        <button
+            onclick="sendMessage()"
+            class="icon-btn"
+        >
+
+            <i class="fa-solid fa-paper-plane"></i>
+
+        </button>
+
+    </div>
+
+    <!-- VIDEO AREA -->
+
+    <!-- VIDEO AREA -->
+
+<div id="call-area" class="call-area">
+
+    <video
+        id="localVideo"
+        autoplay
+        muted
+        playsinline
+    ></video>
+
+    <video
+        id="remoteVideo"
+        autoplay
+        playsinline
+    ></video>
+
+</div>
+
+</div>
+
+<script>
+
+// ======================
+// SOCKET
+// ======================
+
+let socket = io();
+
+let username =
+    "{{ username }}";
+
+let group_name =
+    "{{ group_name }}";
+
+let voiceFileName = "";
+
+let replyMessage = "";
+// ======================
+// JOIN GROUP
+// ======================
+
+socket.emit(
+    "join_group",
+    {
+        group_name: group_name
+    }
+);
+
+
+// ======================
+// ONLINE MEMBERS
+// ======================
+
+setInterval(
+    function()
+    {
+        socket.emit(
+            "get_group_online_members",
+            {
+                group_name: group_name
+            }
+        );
+    },
+    2000
+);
+
+socket.on(
+    "group_online_members",
+    function(data)
+    {
+        document.getElementById(
+            "online-members-count"
+        ).innerHTML =
+            data.count + " Online";
+    }
+);
+
+
+// ======================
+// NOTIFICATION
+// ======================
+socket.on(
+    "reaction_notification",
+    function(data)
+    {
+        // SOUND
+
+        document.getElementById(
+            "groupSound"
+        ).play();
+
+        // POPUP
+
+        if(Notification.permission === "granted")
+        {
+            new Notification(
+                "New Reaction",
+                {
+                    body: data.message,
+                    icon: "/static/default.png"
+                }
+            );
+        }
+    }
+);
+
+// ======================
+// SEND MESSAGE
+// ======================
+
+async function sendMessage()
+{
+    let message =
+        document.getElementById(
+            "message"
+        ).value.trim();
+
+    let selectedFile =
+        document.getElementById(
+            "groupFile"
+        ).files[0];
+
+    let fileName = "";
+
+    if(selectedFile)
+     {
+    let formData =
+        new FormData();
+
+    formData.append(
+        "file",
+        selectedFile
+    );
+
+    let response =
+        await fetch(
+            "/upload_file",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+    let result =
+        await response.json();
+
+    fileName =
+        result.filename;
+}
+
+    if(
+        message == "" &&
+        fileName == "" &&
+        voiceFileName == ""
+    )
+    {
+        return;
+    }
+
+    socket.emit(
+        "send_group_message",
+        {
+            group_name:
+                group_name,
+
+            sender:
+                username,
+
+            message:
+                message,
+
+            file_name:
+                fileName,
+
+            voice:
+                voiceFileName,
+            
+            reply_message: replyMessage
+        }
+    );
+
+    document.getElementById(
+        "message"
+    ).value = "";
+
+    document.getElementById("groupFile").value = "";
+
+    voiceFileName = "";
+
+    replyMessage = "";
+
+document.getElementById(
+    "replyBox"
+).style.display = "none";
+}
+
+
+// ======================
+// ENTER KEY SEND
+// ======================
+
+document.getElementById(
+    "message"
+).addEventListener(
+    "keypress",
+    function(event)
+    {
+        if(event.key === "Enter")
+        {
+            event.preventDefault();
+
+            sendMessage();
+        }
+    }
+);
+
+
+// ======================
+// TYPING
+// ======================
+
+function typingStatus()
+{
+    socket.emit(
+        "group_typing",
+        {
+            username:
+                username,
+
+            group_name:
+                group_name
+        }
+    );
+}
+
+socket.on(
+    "show_group_typing",
+    function(data)
+    {
+        let typingBox =
+            document.getElementById(
+                "typing-status"
+            );
+
+        if(data.username != username)
+        {
+            typingBox.innerHTML =
+                data.username +
+                " typing...";
+        }
+
+        setTimeout(
+            function()
+            {
+                typingBox.innerHTML = "";
+            },
+            1000
+        );
+    }
+);
+
+
+// ======================
+// EMOJI
+// ======================
+
+function addEmoji(emoji)
+{
+    document.getElementById(
+        "message"
+    ).value += emoji;
+}
+
+
+// ======================
+// VOICE RECORD
+// ======================
+
+let mediaRecorder;
+
+let audioChunks = [];
+
+async function startRecording()
+{
+    let stream =
+        await navigator.mediaDevices.getUserMedia(
+            {
+                audio: true
+            }
+        );
+
+    mediaRecorder =
+        new MediaRecorder(stream);
+
+    mediaRecorder.start();
+
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable =
+        function(event)
+        {
+            audioChunks.push(
+                event.data
+            );
+        };
+
+    mediaRecorder.onstop =
+        async function()
+        {
+            let audioBlob =
+                new Blob(
+                    audioChunks,
+                    {
+                        type: "audio/webm"
+                    }
+                );
+
+            let formData =
+                new FormData();
+
+            formData.append(
+                "audio",
+                audioBlob,
+                "group_voice.webm"
+            );
+
+            let response =
+                await fetch(
+                    "/upload_voice",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+            let result =
+                await response.json();
+
+            voiceFileName =
+                result.filename;
+
+            alert(
+                "Voice Recorded"
+            );
+        };
+
+    setTimeout(
+        function()
+        {
+            mediaRecorder.stop();
+        },
+        5000
+    );
+}
+
+
+// ======================
+// WEBRTC
+// ======================
+
+let peerConnection;
+
+let localStream;
+
+const servers = {
+    iceServers: [
+        {
+            urls:
+            "stun:stun.l.google.com:19302"
+        }
+    ]
+};
+
+
+// ======================
+// CREATE PEER
+// ======================
+
+function createPeerConnection()
+{
+    peerConnection =
+        new RTCPeerConnection(
+            servers
+        );
+
+    peerConnection.ontrack =
+        function(event)
+        {
+            document.getElementById(
+                "remoteVideo"
+            ).srcObject =
+                event.streams[0];
+        };
+
+    peerConnection.onicecandidate =
+        function(event)
+        {
+            if(event.candidate)
+            {
+                socket.emit(
+                    "ice_candidate",
+                    {
+                        room:
+                            group_name,
+
+                        candidate:
+                            event.candidate
+                    }
+                );
+            }
+        };
+}
+
+
+// ======================
+// VOICE CALL
+// ======================
+
+async function startVoiceCall()
+{
+    localStream =
+        await navigator.mediaDevices.getUserMedia(
+            {
+                audio: true,
+                video: false
+            }
+        );
+
+    document.body.classList.add(
+        "call-active"
+    );
+
+    createPeerConnection();
+
+    localStream
+    .getTracks()
+    .forEach(
+        track =>
+        peerConnection.addTrack(
+            track,
+            localStream
+        )
+    );
+
+    let offer =
+        await peerConnection.createOffer();
+
+    await peerConnection.setLocalDescription(
+        offer
+    );
+
+    socket.emit(
+        "call_user",
+        {
+            room:
+                group_name,
+
+            offer:
+                offer,
+
+            type:
+                "voice"
+        }
+    );
+}
+
+
+// ======================
+// VIDEO CALL
+// ======================
+
+async function startVideoCall()
+{
+    try
+    {
+        localStream =
+            await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: true
+            });
+
+        document.body.classList.add(
+            "call-active"
+        );
+
+        document.getElementById(
+            "localVideo"
+        ).srcObject = localStream;
+
+        createPeerConnection();
+
+        localStream.getTracks().forEach(
+            track =>
+            peerConnection.addTrack(
+                track,
+                localStream
+            )
+        );
+
+        let offer =
+            await peerConnection.createOffer();
+
+        await peerConnection.setLocalDescription(
+            offer
+        );
+
+        socket.emit(
+            "call_user",
+            {
+                room: group_name,
+                offer: offer,
+                type: "video"
+            }
+        );
+    }
+    catch(error)
+    {
+        console.log(error);
+        alert("Camera permission denied");
+    }
+}
+
+
+// ======================
+// INCOMING CALL
+// ======================
+socket.on(
+    "incoming_call",
+    async function(data)
+    {
+        try
+        {
+            createPeerConnection();
+
+            localStream =
+                await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: data.type == "video"
+                });
+
+            document.body.classList.add(
+                "call-active"
+            );
+
+            if(data.type == "video")
+            {
+                document.getElementById(
+                    "localVideo"
+                ).srcObject = localStream;
+            }
+
+            localStream.getTracks().forEach(
+                track =>
+                peerConnection.addTrack(
+                    track,
+                    localStream
+                )
+            );
+
+            await peerConnection.setRemoteDescription(
+                new RTCSessionDescription(
+                    data.offer
+                )
+            );
+
+            let answer =
+                await peerConnection.createAnswer();
+
+            await peerConnection.setLocalDescription(
+                answer
+            );
+
+            socket.emit(
+                "answer_call",
+                {
+                    room: group_name,
+                    answer: answer
+                }
+            );
+        }
+        catch(error)
+        {
+            console.log(error);
+        }
+    }
+);
+
+
+// ======================
+// CALL ANSWERED
+// ======================
+
+socket.on(
+    "call_answered",
+    async function(data)
+    {
+        await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(
+                data.answer
+            )
+        );
+    }
+);
+
+
+// ======================
+// ICE CANDIDATE
+// ======================
+
+socket.on(
+    "ice_candidate",
+    async function(data)
+    {
+        if(data.candidate)
+        {
+            await peerConnection.addIceCandidate(
+                new RTCIceCandidate(
+                    data.candidate
+                )
+            );
+        }
+    }
+);
+
+
+// ======================
+// DARK MODE
+// ======================
+
+function toggleDarkMode()
+{
+    document.body.classList.toggle(
+        "dark-mode"
+    );
+}
+
+
+// ======================
+// END CALL
+// ======================
+
+function endCall()
+{
+    if(localStream)
+    {
+        localStream.getTracks().forEach(
+            track => track.stop()
+        );
+    }
+
+    if(peerConnection)
+    {
+        peerConnection.close();
+    }
+
+    document.body.classList.remove(
+        "call-active"
+    );
+
+    document.getElementById(
+        "localVideo"
+    ).srcObject = null;
+
+    document.getElementById(
+        "remoteVideo"
+    ).srcObject = null;
+
+    socket.emit(
+        "end_call",
+        {
+            room: group_name
+        }
+    );
+}
+
+
+// ======================
+// CALL ENDED
+// ======================
+
+socket.on(
+    "call_ended",
+    function()
+    {
+        if(localStream)
+        {
+            localStream.getTracks().forEach(
+                track => track.stop()
+            );
+        }
+
+        if(peerConnection)
+        {
+            peerConnection.close();
+        }
+
+        document.body.classList.remove(
+            "call-active"
+        );
+
+        document.getElementById(
+            "localVideo"
+        ).srcObject = null;
+
+        document.getElementById(
+            "remoteVideo"
+        ).srcObject = null;
+
+        alert(
+            "Call Ended"
+        );
+    }
+);
+
+
+// ======================
+// AUTO SCROLL
+// ======================
+
+// ======================
+// AUTO SCROLL
+// ======================
+
+function scrollToBottom()
+{
+    let messages =
+        document.getElementById(
+            "messages"
+        );
+
+    messages.scrollTop =
+        messages.scrollHeight;
+}
+
+
+// PAGE LOAD
+
+window.onload = function()
+{
+    scrollToBottom();
+
+    cancelReply();
+};
+// ======================
+// RECEIVE GROUP MESSAGE
+// ======================
+
+socket.on(
+    "receive_group_message",
+    function(data)
+    {
+        let messages =
+            document.getElementById(
+                "messages"
+            );
+
+        let fileHTML = "";
+        let voiceHTML = "";
+        let replyHTML = "";
+        
+        // REPLY
+
+        if(data.reply_message)
+        {
+            replyHTML =
+            `
+            <div class="reply-message-box">
+
+                <small>
+                    Reply
+                </small>
+
+                <p>
+                    ${data.reply_message}
+                </p>
+
+            </div>
+            `;
+        }
+
+        // FILE
+
+        if(data.file_name)
+        {
+            let ext =
+                data.file_name
+                .split(".")
+                .pop()
+                .toLowerCase();
+
+            // IMAGE
+
+            if(
+                ['jpg','jpeg','png','gif']
+                .includes(ext)
+            )
+            {
+                fileHTML =
+                `
+                <img
+                    src="/static/uploads/${data.file_name}"
+                    class="chat-image"
+                >
+                `;
+            }
+
+            // VIDEO
+
+            else if(
+                ['mp4','webm','mov']
+                .includes(ext)
+            )
+            {
+                fileHTML =
+                `
+                <video controls class="chat-video">
+
+                    <source
+                        src="/static/uploads/${data.file_name}"
+                    >
+
+                </video>
+                `;
+            }
+
+            // OTHER FILES
+
+            else
+            {
+                fileHTML =
+                `
+                <a
+                    href="/static/uploads/${data.file_name}"
+                    target="_blank"
+                    class="file-link"
+                >
+                    📄 Open File
+                </a>
+                `;
+            }
+        }
+
+        // VOICE
+
+        if(data.voice)
+        {
+            voiceHTML =
+            `
+            <audio controls>
+
+                <source
+                    src="/static/voice_notes/${data.voice}"
+                    type="audio/webm"
+                >
+
+            </audio>
+            `;
+        }
+
+        // ADD MESSAGE
+        messages.innerHTML +=
+        `
+        <div class="
+            ${data.sender == username
+                ? 'my-message'
+                : 'other-message'}
+        ">
+            <div class="reaction-picker">
+
+                <span onclick="sendGroupReaction('${data.id}','👍')">👍</span>
+
+                <span onclick="sendGroupReaction('${data.id}','❤️')">❤️</span>
+
+                <span onclick="sendGroupReaction('${data.id}','😂')">😂</span>
+
+                <span onclick="sendGroupReaction('${data.id}','🔥')">🔥</span>
+
+            </div>
+
+            <div
+                class="show-reaction"
+                id="group-reaction-${data.id}"
+                style="display:none;"
+            >
+            </div>
+            <b>${data.sender}</b>
+
+            <div class="message-options">
+
+                <button
+                    class="menu-btn"
+                    onclick="toggleMenu(${data.id})"
+                >
+                    ⋮
+                </button>
+
+                <div
+                    class="menu-box"
+                    id="menu-${data.id}"
+                >
+
+                    <button
+                        onclick="groupDeleteForMe(${data.id})"
+                    >
+                        Delete For Me
+                    </button>
+
+                    ${
+                        data.sender == username
+                        ?
+                        `
+                        <button
+                            onclick="groupDeleteForEveryone(${data.id})"
+                        >
+                            Delete For Everyone
+                        </button>
+                        `
+                        :
+                        ""
+                    }
+
+                </div>
+
+            </div>
+
+            <br>
+
+            ${replyHTML}
+
+            ${data.message || ""}
+
+            ${fileHTML}
+
+            ${voiceHTML}
+
+            <br>
+
+            <small>Delivered</small>
+
+        </div>
+        `;
+
+        // AUTO SCROLL
+
+        scrollToBottom();
+
+        // NOTIFICATION
+
+        if(data.sender != username)
+        {
+            showNotification(
+                data.sender,
+                data.message || "New message"
+            );
+        }
+    }
+);
+// ======================
+// CHAT MENU
+// ======================
+
+function toggleChatMenu()
+{
+    let menu =
+        document.getElementById(
+            "chatDropdownMenu"
+        );
+
+    menu.classList.toggle(
+        "show"
+    );
+}
+
+window.addEventListener(
+    "click",
+    function(event)
+    {
+        if(
+            !event.target.closest(
+                ".chat-menu-wrapper"
+            )
+        )
+        {
+            let menu =
+                document.getElementById(
+                    "chatDropdownMenu"
+                );
+
+            if(menu)
+            {
+                menu.classList.remove(
+                    "show"
+                );
+            }
+        }
+    }
+);
+// ======================
+// SET REPLY
+// ======================
+
+function setReply(message)
+{
+    replyMessage = message;
+
+    document.getElementById(
+        "replyBox"
+    ).style.display = "flex";
+
+    document.getElementById(
+        "replyText"
+    ).innerHTML = message;
+}
+
+
+// ======================
+// CANCEL REPLY
+// ======================
+
+function cancelReply()
+{
+    replyMessage = "";
+
+    document.getElementById(
+        "replyBox"
+    ).style.display = "none";
+
+    document.getElementById(
+        "replyText"
+    ).innerHTML = "";
+}
+// ======================
+// SEND GROUP REACTION
+// ======================
+
+function sendGroupReaction(message_id, emoji)
+{
+    socket.emit(
+        "send_group_reaction",
+        {
+            message_id: message_id,
+            emoji: emoji,
+            group_name: group_name
+        }
+    );
+}
+
+
+// ======================
+// RECEIVE GROUP REACTION
+// ======================
+
+socket.on(
+    "receive_group_reaction",
+    function(data)
+    {
+        let reactionBox =
+            document.getElementById(
+                "group-reaction-" +
+                data.message_id
+            );
+
+        if(reactionBox)
+        {
+            reactionBox.style.display = "block";
+
+            reactionBox.innerHTML =
+                data.emoji;
+        }
+    }
+);
+
+function replyOnly(event, message)
+{
+    if(
+        event.target.closest(".reaction-picker") ||
+        event.target.closest(".message-options")
+    )
+    {
+        return;
+    }
+
+    setReply(message);
+}
+function toggleMenu(messageId)
+{
+    document
+        .querySelectorAll(".menu-box")
+        .forEach(menu =>
+        {
+            menu.style.display = "none";
+        });
+
+    let menu =
+        document.getElementById(
+            "menu-" + messageId
+        );
+
+    if(menu.style.display === "block")
+    {
+        menu.style.display = "none";
+    }
+    else
+    {
+        menu.style.display = "block";
+    }
+}
+document.addEventListener(
+    "click",
+    function(e)
+    {
+        if(
+            !e.target.closest(".message-options")
+        )
+        {
+            document
+                .querySelectorAll(".menu-box")
+                .forEach(menu =>
+                {
+                    menu.style.display = "none";
+                });
+        }
+    }
+);
+function groupDeleteForMe(messageId)
+{
+    fetch(
+        "/group_delete_for_me/" + messageId,
+        {
+            method: "POST"
+        }
+    )
+    .then(response => response.json())
+    .then(data =>
+    {
+        if(data.success)
+        {
+            location.reload();
+        }
+    });
+}
+function groupDeleteForEveryone(messageId)
+{
+    fetch(
+        "/group_delete_for_everyone/" + messageId,
+        {
+            method:"POST"
+        }
+    )
+    .then(response => response.json())
+    .then(data =>
+    {
+        if(data.success)
+        {
+            location.reload();
+        }
+    });
+}
+socket.on(
+    "group_message_deleted",
+    function(data)
+    {
+        let msg =
+            document.getElementById(
+                "msg-" + data.message_id
+            );
+
+        if(msg)
+        {
+            msg.innerHTML =
+                "<i>This message was deleted</i>";
+        }
+    }
+);
+</script>
+
+</body>
+
+</html>

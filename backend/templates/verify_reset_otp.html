@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+Verify OTP
+</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f5f7fb;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.otp-container{
+    width:400px;
+    background:white;
+    padding:30px;
+    border-radius:12px;
+    box-shadow:0 0 20px rgba(0,0,0,0.08);
+}
+
+h2{
+    text-align:center;
+    margin-bottom:10px;
+    color:#333;
+}
+
+p{
+    text-align:center;
+    color:#777;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    margin-bottom:15px;
+    font-size:15px;
+    text-align:center;
+    letter-spacing:3px;
+}
+
+input:focus{
+    outline:none;
+    border-color:#4a90e2;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#4a90e2;
+    color:white;
+    font-size:15px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#3578d6;
+}
+
+.back-link{
+    display:block;
+    text-align:center;
+    margin-top:15px;
+    text-decoration:none;
+    color:#4a90e2;
+}
+
+.back-link:hover{
+    text-decoration:underline;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="otp-container">
+
+    <h2>
+        Verify Reset OTP
+    </h2>
+
+    <p>
+        Enter the OTP sent to your email
+    </p>
+
+    <form method="POST">
+
+        <input
+            type="text"
+            name="otp"
+            placeholder="Enter OTP"
+            required
+        >
+
+        <button type="submit">
+
+            Verify OTP
+
+        </button>
+
+    </form>
+
+    <a
+        href="/login"
+        class="back-link"
+    >
+
+        Back To Login
+
+    </a>
+
+</div>
+
+</body>
+
+</html>
